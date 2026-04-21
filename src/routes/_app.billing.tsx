@@ -62,7 +62,7 @@ function BillingPage() {
     setSaving(true);
     const cust = customers.find((c) => c.id === customerId);
     const { data, error } = await supabase.rpc("create_invoice", {
-      _customer_id: customerId || null,
+      _customer_id: customerId || (null as unknown as string),
       _customer_name: cust?.name ?? walkInName ?? "",
       _customer_phone: cust?.phone ?? walkInPhone ?? "",
       _items: lines as unknown as never,
