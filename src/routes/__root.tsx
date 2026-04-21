@@ -39,6 +39,10 @@ export const Route = createRootRoute({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Santhosh Mobiles — Billing System" },
+      { name: "twitter:description", content: "Billing & inventory management for Santhosh Mobiles." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/aa3ef3f9-e521-4933-bf88-510f7b2bf757/id-preview-9bf4a361--eb01db88-05f2-43f8-ba80-d09ffaa51abf.lovable.app-1776790728807.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/aa3ef3f9-e521-4933-bf88-510f7b2bf757/id-preview-9bf4a361--eb01db88-05f2-43f8-ba80-d09ffaa51abf.lovable.app-1776790728807.png" },
     ],
     links: [
       {
