@@ -147,11 +147,16 @@ export type Database = {
       }
       mobile_exchanges: {
         Row: {
+          accessories: string | null
           brand: string
           condition_summary: string
           created_at: string
           created_by: string | null
+          exchange_date: string
+          exchange_value: number
           id: string
+          id_proof_number: string | null
+          id_proof_type: string | null
           imei: string
           invoice_id: string | null
           mobile_number: string
@@ -163,11 +168,16 @@ export type Database = {
           valuation: number
         }
         Insert: {
+          accessories?: string | null
           brand: string
           condition_summary: string
           created_at?: string
           created_by?: string | null
+          exchange_date?: string
+          exchange_value?: number
           id?: string
+          id_proof_number?: string | null
+          id_proof_type?: string | null
           imei: string
           invoice_id?: string | null
           mobile_number: string
@@ -179,11 +189,16 @@ export type Database = {
           valuation?: number
         }
         Update: {
+          accessories?: string | null
           brand?: string
           condition_summary?: string
           created_at?: string
           created_by?: string | null
+          exchange_date?: string
+          exchange_value?: number
           id?: string
+          id_proof_number?: string | null
+          id_proof_type?: string | null
           imei?: string
           invoice_id?: string | null
           mobile_number?: string
