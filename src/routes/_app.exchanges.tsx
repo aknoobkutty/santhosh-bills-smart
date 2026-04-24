@@ -145,24 +145,24 @@ function ExchangesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2"><Repeat className="h-7 w-7" />Mobile Exchanges</h1>
-          <p className="text-muted-foreground">Track old mobiles taken in exchange</p>
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2"><Repeat className="h-6 w-6 sm:h-7 sm:w-7" />Mobile Exchanges</h1>
+          <p className="text-sm text-muted-foreground">Track old mobiles taken in exchange</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />New Exchange</Button>
+            <Button onClick={openNew} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />New Exchange</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editing ? "Edit Exchange" : "Record Exchange"}</DialogTitle></DialogHeader>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><Label>Seller Name *</Label><Input value={form.seller_name} onChange={(e) => setForm({ ...form, seller_name: e.target.value })} maxLength={100} /></div>
               <div><Label>Mobile Number *</Label><Input value={form.mobile_number} onChange={(e) => setForm({ ...form, mobile_number: e.target.value })} maxLength={20} /></div>
-              <div className="col-span-2"><Label>IMEI ID *</Label><Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} maxLength={20} placeholder="15-digit IMEI" /></div>
+              <div className="sm:col-span-2"><Label>IMEI ID *</Label><Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} maxLength={20} placeholder="15-digit IMEI" /></div>
               <div><Label>Brand *</Label><Input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} placeholder="Apple, Samsung…" maxLength={50} /></div>
               <div><Label>Model *</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="iPhone 11, Galaxy S21…" maxLength={100} /></div>
-              <div className="col-span-2"><Label>Condition Summary *</Label><Textarea value={form.condition_summary} onChange={(e) => setForm({ ...form, condition_summary: e.target.value })} placeholder="Good / Screen cracked / Battery issue…" maxLength={500} /></div>
+              <div className="sm:col-span-2"><Label>Condition Summary *</Label><Textarea value={form.condition_summary} onChange={(e) => setForm({ ...form, condition_summary: e.target.value })} placeholder="Good / Screen cracked / Battery issue…" maxLength={500} /></div>
               <div><Label>Valuation (₹)</Label><Input type="number" min="0" value={form.valuation} onChange={(e) => setForm({ ...form, valuation: Number(e.target.value) })} /></div>
               <div>
                 <Label>Status</Label>
@@ -177,7 +177,7 @@ function ExchangesPage() {
               </div>
               <div><Label>Exchange Value (₹)</Label><Input type="number" min="0" value={form.exchange_value} onChange={(e) => setForm({ ...form, exchange_value: Number(e.target.value) })} /></div>
               <div><Label>Date of Exchange</Label><Input type="date" value={form.exchange_date} onChange={(e) => setForm({ ...form, exchange_date: e.target.value })} /></div>
-              <div className="col-span-2"><Label>Accessories Included</Label><Input value={form.accessories} onChange={(e) => setForm({ ...form, accessories: e.target.value })} placeholder="Charger, box, earphones…" maxLength={200} /></div>
+              <div className="sm:col-span-2"><Label>Accessories Included</Label><Input value={form.accessories} onChange={(e) => setForm({ ...form, accessories: e.target.value })} placeholder="Charger, box, earphones…" maxLength={200} /></div>
               <div>
                 <Label>ID Proof Type</Label>
                 <Select value={form.id_proof_type} onValueChange={(v) => setForm({ ...form, id_proof_type: v })}>
@@ -194,18 +194,20 @@ function ExchangesPage() {
                 </Select>
               </div>
               <div><Label>ID Proof Number</Label><Input value={form.id_proof_number} onChange={(e) => setForm({ ...form, id_proof_number: e.target.value })} maxLength={50} disabled={form.id_proof_type === "none"} /></div>
-              <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
+              <div className="sm:col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
             </div>
             <Button onClick={save} className="w-full">{editing ? "Update" : "Save"}</Button>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="p-4">
+      <Card className="p-3 sm:p-4">
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search by seller, phone, IMEI, brand, model…" className="pl-9" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+        <div className="overflow-x-auto -mx-3 sm:mx-0">
+        <div className="inline-block min-w-full align-middle px-3 sm:px-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -242,6 +244,8 @@ function ExchangesPage() {
             )}
           </TableBody>
         </Table>
+        </div>
+        </div>
       </Card>
     </div>
   );

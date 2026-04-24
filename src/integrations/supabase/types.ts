@@ -219,6 +219,75 @@ export type Database = {
           },
         ]
       }
+      mobile_services: {
+        Row: {
+          brand: string
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          delivery_date: string | null
+          device_model: string
+          estimated_cost: number
+          final_cost: number
+          id: string
+          imei: string | null
+          mobile_number: string
+          notes: string | null
+          password_type: string
+          password_value: string | null
+          problem_description: string
+          service_date: string
+          service_status: string
+          service_type: string
+          technician_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          delivery_date?: string | null
+          device_model: string
+          estimated_cost?: number
+          final_cost?: number
+          id?: string
+          imei?: string | null
+          mobile_number: string
+          notes?: string | null
+          password_type?: string
+          password_value?: string | null
+          problem_description: string
+          service_date?: string
+          service_status?: string
+          service_type?: string
+          technician_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          delivery_date?: string | null
+          device_model?: string
+          estimated_cost?: number
+          final_cost?: number
+          id?: string
+          imei?: string | null
+          mobile_number?: string
+          notes?: string | null
+          password_type?: string
+          password_value?: string | null
+          problem_description?: string
+          service_date?: string
+          service_status?: string
+          service_type?: string
+          technician_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           brand: string | null
