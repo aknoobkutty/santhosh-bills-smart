@@ -15,6 +15,7 @@ export const Route = createFileRoute("/invoice/$id")({
 type Inv = {
   id: string; invoice_number: string; customer_name: string | null; customer_phone: string | null;
   subtotal: number; gst_total: number; grand_total: number; created_at: string;
+  payment_method: string; amount_paid: number; change_returned: number;
 };
 type Item = { id: string; product_name: string; quantity: number; unit_price: number; gst_percent: number; line_total: number };
 
@@ -88,6 +89,13 @@ function InvoicePage() {
             <div className="flex justify-between"><span>Subtotal</span><span>₹{Number(inv.subtotal).toFixed(2)}</span></div>
             <div className="flex justify-between"><span>GST</span><span>₹{Number(inv.gst_total).toFixed(2)}</span></div>
             <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Grand Total</span><span>₹{Number(inv.grand_total).toFixed(2)}</span></div>
+            <div className="flex justify-between border-t pt-2 mt-2"><span>Payment</span><span className="uppercase font-medium">{inv.payment_method}</span></div>
+            {inv.payment_method === "cash" && (
+              <>
+                <div className="flex justify-between"><span>Cash Received</span><span>₹{Number(inv.amount_paid).toFixed(2)}</span></div>
+                <div className="flex justify-between font-medium"><span>Change Returned</span><span>₹{Number(inv.change_returned).toFixed(2)}</span></div>
+              </>
+            )}
           </div>
         </div>
 

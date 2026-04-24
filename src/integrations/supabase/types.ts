@@ -91,6 +91,8 @@ export type Database = {
       }
       invoices: {
         Row: {
+          amount_paid: number
+          change_returned: number
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -100,9 +102,12 @@ export type Database = {
           gst_total: number
           id: string
           invoice_number: string
+          payment_method: string
           subtotal: number
         }
         Insert: {
+          amount_paid?: number
+          change_returned?: number
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -112,9 +117,12 @@ export type Database = {
           gst_total?: number
           id?: string
           invoice_number: string
+          payment_method?: string
           subtotal?: number
         }
         Update: {
+          amount_paid?: number
+          change_returned?: number
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -124,6 +132,7 @@ export type Database = {
           gst_total?: number
           id?: string
           invoice_number?: string
+          payment_method?: string
           subtotal?: number
         }
         Relationships: [
@@ -132,6 +141,65 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mobile_exchanges: {
+        Row: {
+          brand: string
+          condition_summary: string
+          created_at: string
+          created_by: string | null
+          id: string
+          imei: string
+          invoice_id: string | null
+          mobile_number: string
+          model: string
+          notes: string | null
+          seller_name: string
+          status: string
+          updated_at: string
+          valuation: number
+        }
+        Insert: {
+          brand: string
+          condition_summary: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imei: string
+          invoice_id?: string | null
+          mobile_number: string
+          model: string
+          notes?: string | null
+          seller_name: string
+          status?: string
+          updated_at?: string
+          valuation?: number
+        }
+        Update: {
+          brand?: string
+          condition_summary?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imei?: string
+          invoice_id?: string | null
+          mobile_number?: string
+          model?: string
+          notes?: string | null
+          seller_name?: string
+          status?: string
+          updated_at?: string
+          valuation?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_exchanges_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -224,10 +292,12 @@ export type Database = {
     Functions: {
       create_invoice: {
         Args: {
+          _amount_paid?: number
           _customer_id: string
           _customer_name: string
           _customer_phone: string
           _items: Json
+          _payment_method?: string
         }
         Returns: string
       }
