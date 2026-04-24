@@ -30,6 +30,11 @@ type Exchange = {
   status: "pending" | "accepted" | "rejected";
   notes: string | null;
   created_at: string;
+  exchange_value: number;
+  exchange_date: string;
+  accessories: string | null;
+  id_proof_type: string | null;
+  id_proof_number: string | null;
 };
 
 const empty = {
@@ -42,6 +47,11 @@ const empty = {
   valuation: 0,
   status: "pending" as Exchange["status"],
   notes: "",
+  exchange_value: 0,
+  exchange_date: new Date().toISOString().slice(0, 10),
+  accessories: "",
+  id_proof_type: "none",
+  id_proof_number: "",
 };
 
 function ExchangesPage() {
@@ -79,6 +89,11 @@ function ExchangesPage() {
       valuation: Number(e.valuation),
       status: e.status,
       notes: e.notes ?? "",
+      exchange_value: Number(e.exchange_value ?? 0),
+      exchange_date: e.exchange_date ?? new Date().toISOString().slice(0, 10),
+      accessories: e.accessories ?? "",
+      id_proof_type: e.id_proof_type ?? "none",
+      id_proof_number: e.id_proof_number ?? "",
     });
     setOpen(true);
   }
@@ -97,6 +112,11 @@ function ExchangesPage() {
       valuation: Number(form.valuation) || 0,
       status: form.status,
       notes: form.notes?.trim() || null,
+      exchange_value: Number(form.exchange_value) || 0,
+      exchange_date: form.exchange_date,
+      accessories: form.accessories?.trim() || null,
+      id_proof_type: form.id_proof_type === "none" ? null : form.id_proof_type,
+      id_proof_number: form.id_proof_number?.trim() || null,
     };
     const { error } = editing
       ? await supabase.from("mobile_exchanges").update(payload).eq("id", editing.id)
@@ -155,6 +175,25 @@ function ExchangesPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div><Label>Exchange Value (₹)</Label><Input type="number" min="0" value={form.exchange_value} onChange={(e) => setForm({ ...form, exchange_value: Number(e.target.value) })} /></div>
+              <div><Label>Date of Exchange</Label><Input type="date" value={form.exchange_date} onChange={(e) => setForm({ ...form, exchange_date: e.target.value })} /></div>
+              <div className="col-span-2"><Label>Accessories Included</Label><Input value={form.accessories} onChange={(e) => setForm({ ...form, accessories: e.target.value })} placeholder="Charger, box, earphones…" maxLength={200} /></div>
+              <div>
+                <Label>ID Proof Type</Label>
+                <Select value={form.id_proof_type} onValueChange={(v) => setForm({ ...form, id_proof_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="aadhaar">Aadhaar</SelectItem>
+                    <SelectItem value="pan">PAN Card</SelectItem>
+                    <SelectItem value="driving_license">Driving License</SelectItem>
+                    <SelectItem value="voter_id">Voter ID</SelectItem>
+                    <SelectItem value="passport">Passport</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>ID Proof Number</Label><Input value={form.id_proof_number} onChange={(e) => setForm({ ...form, id_proof_number: e.target.value })} maxLength={50} disabled={form.id_proof_type === "none"} /></div>
               <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
             </div>
             <Button onClick={save} className="w-full">{editing ? "Update" : "Save"}</Button>
@@ -170,12 +209,13 @@ function ExchangesPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Date</TableHead>
               <TableHead>Seller</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Device</TableHead>
               <TableHead>IMEI</TableHead>
               <TableHead>Condition</TableHead>
-              <TableHead className="text-right">Valuation</TableHead>
+              <TableHead className="text-right">Exchange ₹</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -183,12 +223,13 @@ function ExchangesPage() {
           <TableBody>
             {filtered.map((e) => (
               <TableRow key={e.id}>
+                <TableCell className="text-xs whitespace-nowrap">{e.exchange_date ? new Date(e.exchange_date).toLocaleDateString() : "—"}</TableCell>
                 <TableCell className="font-medium">{e.seller_name}</TableCell>
                 <TableCell>{e.mobile_number}</TableCell>
                 <TableCell>{e.brand} {e.model}</TableCell>
                 <TableCell className="font-mono text-xs">{e.imei}</TableCell>
                 <TableCell className="max-w-xs truncate">{e.condition_summary}</TableCell>
-                <TableCell className="text-right">₹{Number(e.valuation).toFixed(2)}</TableCell>
+                <TableCell className="text-right">₹{Number(e.exchange_value ?? e.valuation).toFixed(2)}</TableCell>
                 <TableCell><Badge variant={statusVariant(e.status)} className="capitalize">{e.status}</Badge></TableCell>
                 <TableCell className="text-right">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
@@ -197,7 +238,7 @@ function ExchangesPage() {
               </TableRow>
             ))}
             {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No exchange records</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No exchange records</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
