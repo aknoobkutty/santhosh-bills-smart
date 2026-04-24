@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as AppServicesRouteImport } from './routes/_app.services'
 import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppProductsRouteImport } from './routes/_app.products'
 import { Route as AppExchangesRouteImport } from './routes/_app.exchanges'
@@ -38,6 +39,11 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
   id: '/invoice/$id',
   path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppServicesRoute = AppServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppReportsRoute = AppReportsRouteImport.update({
   id: '/reports',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/exchanges': typeof AppExchangesRoute
   '/products': typeof AppProductsRoute
   '/reports': typeof AppReportsRoute
+  '/services': typeof AppServicesRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesByTo {
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/exchanges': typeof AppExchangesRoute
   '/products': typeof AppProductsRoute
   '/reports': typeof AppReportsRoute
+  '/services': typeof AppServicesRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesById {
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/_app/exchanges': typeof AppExchangesRoute
   '/_app/products': typeof AppProductsRoute
   '/_app/reports': typeof AppReportsRoute
+  '/_app/services': typeof AppServicesRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRouteTypes {
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/exchanges'
     | '/products'
     | '/reports'
+    | '/services'
     | '/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/exchanges'
     | '/products'
     | '/reports'
+    | '/services'
     | '/invoice/$id'
   id:
     | '__root__'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/_app/exchanges'
     | '/_app/products'
     | '/_app/reports'
+    | '/_app/services'
     | '/invoice/$id'
   fileRoutesById: FileRoutesById
 }
@@ -178,6 +190,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invoice/$id'
       preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/services': {
+      id: '/_app/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof AppServicesRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/reports': {
       id: '/_app/reports'
@@ -231,6 +250,7 @@ interface AppRouteChildren {
   AppExchangesRoute: typeof AppExchangesRoute
   AppProductsRoute: typeof AppProductsRoute
   AppReportsRoute: typeof AppReportsRoute
+  AppServicesRoute: typeof AppServicesRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -240,6 +260,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppExchangesRoute: AppExchangesRoute,
   AppProductsRoute: AppProductsRoute,
   AppReportsRoute: AppReportsRoute,
+  AppServicesRoute: AppServicesRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
