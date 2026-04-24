@@ -1,21 +1,22 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Receipt } from "lucide-react";
+import { Trash2, Plus, Receipt, ScanLine, Banknote, CreditCard, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/billing")({
   component: BillingPage,
 });
 
-type Product = { id: string; name: string; price: number; gst_percent: number; stock_quantity: number };
+type Product = { id: string; name: string; price: number; gst_percent: number; stock_quantity: number; barcode?: string | null };
 type Customer = { id: string; name: string; phone: string | null };
 type Line = { product_id: string; quantity: number };
+type PayMethod = "cash" | "card" | "upi";
 
 function BillingPage() {
   const navigate = useNavigate();
@@ -27,10 +28,14 @@ function BillingPage() {
   const [walkInPhone, setWalkInPhone] = useState("");
   const [lines, setLines] = useState<Line[]>([{ product_id: "", quantity: 1 }]);
   const [saving, setSaving] = useState(false);
+  const [payMethod, setPayMethod] = useState<PayMethod>("cash");
+  const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [scan, setScan] = useState("");
+  const scanRef = useRef<HTMLInputElement>(null);
 
   async function loadAll() {
     const [{ data: p }, { data: c }, { data: r }] = await Promise.all([
-      supabase.from("products").select("id, name, price, gst_percent, stock_quantity").order("name"),
+      supabase.from("products").select("*").order("name"),
       supabase.from("customers").select("id, name, phone").order("name"),
       supabase.from("invoices").select("id, invoice_number, grand_total, customer_name, created_at").order("created_at", { ascending: false }).limit(10),
     ]);
@@ -56,9 +61,38 @@ function BillingPage() {
   const subtotal = computed.reduce((s, r) => s + r.sub, 0);
   const gstTotal = computed.reduce((s, r) => s + r.gst, 0);
   const grand = subtotal + gstTotal;
+  const change = payMethod === "cash" ? Math.max(0, (Number(amountPaid) || 0) - grand) : 0;
+  const shortBy = payMethod === "cash" ? Math.max(0, grand - (Number(amountPaid) || 0)) : 0;
+
+  function handleScan(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    const code = scan.trim();
+    if (!code) return;
+    // Match by barcode field, or fallback to product id / name contains
+    const p = products.find((pp) =>
+      (pp.barcode && pp.barcode === code) || pp.id === code || pp.name.toLowerCase() === code.toLowerCase()
+    );
+    if (!p) {
+      toast.error(`No product for code: ${code}`);
+    } else if (p.stock_quantity <= 0) {
+      toast.error(`${p.name} is out of stock`);
+    } else {
+      setLines((ls) => {
+        const idx = ls.findIndex((l) => l.product_id === p.id);
+        if (idx >= 0) return ls.map((l, i) => (i === idx ? { ...l, quantity: l.quantity + 1 } : l));
+        // Replace first empty line, else append
+        const emptyIdx = ls.findIndex((l) => !l.product_id);
+        if (emptyIdx >= 0) return ls.map((l, i) => (i === emptyIdx ? { product_id: p.id, quantity: 1 } : l));
+        return [...ls, { product_id: p.id, quantity: 1 }];
+      });
+      toast.success(`Added ${p.name}`);
+    }
+    setScan("");
+  }
 
   async function submit() {
     if (lines.some((l) => !l.product_id || l.quantity <= 0)) return toast.error("Pick product & valid quantity for each line");
+    if (payMethod === "cash" && (Number(amountPaid) || 0) < grand) return toast.error(`Cash received is short by ₹${shortBy.toFixed(2)}`);
     setSaving(true);
     const cust = customers.find((c) => c.id === customerId);
     const { data, error } = await supabase.rpc("create_invoice", {
@@ -66,6 +100,8 @@ function BillingPage() {
       _customer_name: cust?.name ?? walkInName ?? "",
       _customer_phone: cust?.phone ?? walkInPhone ?? "",
       _items: lines as unknown as never,
+      _payment_method: payMethod,
+      _amount_paid: payMethod === "cash" ? Number(amountPaid) : grand,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -82,6 +118,22 @@ function BillingPage() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
+          <Card className="p-5 space-y-2">
+            <div className="flex items-center gap-2">
+              <ScanLine className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">Barcode Scanner</h2>
+            </div>
+            <Input
+              ref={scanRef}
+              autoFocus
+              value={scan}
+              onChange={(e) => setScan(e.target.value)}
+              onKeyDown={handleScan}
+              placeholder="Scan or type barcode/product code, then press Enter"
+            />
+            <p className="text-xs text-muted-foreground">USB/Bluetooth barcode scanners work like a keyboard — focus this field and scan.</p>
+          </Card>
+
           <Card className="p-5 space-y-4">
             <h2 className="font-semibold">Customer</h2>
             <Select value={customerId} onValueChange={setCustomerId}>
@@ -145,6 +197,53 @@ function BillingPage() {
             <div className="flex justify-between text-sm"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
             <div className="flex justify-between text-sm"><span>GST</span><span>₹{gstTotal.toFixed(2)}</span></div>
             <div className="border-t pt-3 flex justify-between font-bold text-lg"><span>Grand Total</span><span>₹{grand.toFixed(2)}</span></div>
+
+            <div className="border-t pt-3 space-y-2">
+              <Label className="text-xs">Payment Method</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { v: "cash", label: "Cash", Icon: Banknote },
+                  { v: "card", label: "Card", Icon: CreditCard },
+                  { v: "upi", label: "UPI", Icon: Smartphone },
+                ] as const).map(({ v, label, Icon }) => (
+                  <Button
+                    key={v}
+                    type="button"
+                    size="sm"
+                    variant={payMethod === v ? "default" : "outline"}
+                    onClick={() => setPayMethod(v)}
+                    className="flex-col h-auto py-2"
+                  >
+                    <Icon className="h-4 w-4 mb-1" />
+                    <span className="text-xs">{label}</span>
+                  </Button>
+                ))}
+              </div>
+              {payMethod === "cash" && (
+                <div className="space-y-2 pt-1">
+                  <Label className="text-xs">Cash Received</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={amountPaid || ""}
+                    onChange={(e) => setAmountPaid(Number(e.target.value))}
+                    placeholder="0.00"
+                  />
+                  {shortBy > 0 && (
+                    <div className="flex justify-between text-sm text-destructive font-medium">
+                      <span>Short by</span><span>₹{shortBy.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {change > 0 && (
+                    <div className="flex justify-between text-sm font-bold text-primary bg-primary/10 px-2 py-1.5 rounded">
+                      <span>Change to return</span><span>₹{change.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <Button className="w-full" onClick={submit} disabled={saving || grand <= 0}>
               <Receipt className="h-4 w-4 mr-2" />{saving ? "Saving…" : "Create Invoice"}
             </Button>
