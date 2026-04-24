@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Receipt, Package, Users, BarChart3, Sun, Moon, LogOut, Smartphone } from "lucide-react";
+import { LayoutDashboard, Receipt, Package, Users, BarChart3, Sun, Moon, LogOut, Smartphone, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -10,6 +10,7 @@ const nav = [
   { to: "/billing", label: "Billing", icon: Receipt },
   { to: "/products", label: "Products", icon: Package },
   { to: "/customers", label: "Customers", icon: Users },
+  { to: "/exchanges", label: "Exchanges", icon: Repeat },
   { to: "/reports", label: "Reports", icon: BarChart3 },
 ] as const;
 
