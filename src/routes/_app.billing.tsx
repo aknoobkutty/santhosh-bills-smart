@@ -206,9 +206,9 @@ function BillingPage() {
       _items: customLines as unknown as never,
       _payment_method: payMethod,
       _amount_paid: payMethod === "cash" ? Number(amountPaid) : grand,
-      _exchange_id: tab === "exchange" ? (linkedExchangeId || null) : null,
-      _service_id: tab === "service" ? (linkedServiceId || null) : null,
-      _notes: billNotes || null,
+      _exchange_id: (tab === "exchange" && linkedExchangeId ? linkedExchangeId : undefined) as unknown as string,
+      _service_id: (tab === "service" && linkedServiceId ? linkedServiceId : undefined) as unknown as string,
+      _notes: (billNotes || undefined) as unknown as string,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
