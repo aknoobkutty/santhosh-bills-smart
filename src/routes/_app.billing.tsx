@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Receipt, ScanLine, Banknote, CreditCard, Smartphone } from "lucide-react";
+import { Trash2, Plus, Receipt, ScanLine, Banknote, CreditCard, Smartphone, Camera, Smartphone as PhoneIcon, Wrench } from "lucide-react";
 import { toast } from "sonner";
+import { CameraScannerDialog } from "@/components/CameraScannerDialog";
 
 export const Route = createFileRoute("/_app/billing")({
   component: BillingPage,
@@ -32,6 +33,7 @@ function BillingPage() {
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [scan, setScan] = useState("");
   const scanRef = useRef<HTMLInputElement>(null);
+  const [camOpen, setCamOpen] = useState(false);
 
   async function loadAll() {
     const [{ data: p }, { data: c }, { data: r }] = await Promise.all([
@@ -66,7 +68,11 @@ function BillingPage() {
 
   function handleScan(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
-    const code = scan.trim();
+    processCode(scan);
+  }
+
+  function processCode(raw: string) {
+    const code = raw.trim();
     if (!code) return;
     // Match by barcode field, or fallback to product id / name contains
     const p = products.find((pp) =>
@@ -116,6 +122,15 @@ function BillingPage() {
         <p className="text-muted-foreground">Create a new invoice</p>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/exchanges"><PhoneIcon className="h-4 w-4 mr-2" />Mobile Exchange</Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/services"><Wrench className="h-4 w-4 mr-2" />Service Invoice</Link>
+        </Button>
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <Card className="p-5 space-y-2">
@@ -123,15 +138,26 @@ function BillingPage() {
               <ScanLine className="h-4 w-4 text-primary" />
               <h2 className="font-semibold">Barcode Scanner</h2>
             </div>
-            <Input
-              ref={scanRef}
-              autoFocus
-              value={scan}
-              onChange={(e) => setScan(e.target.value)}
-              onKeyDown={handleScan}
-              placeholder="Scan or type barcode/product code, then press Enter"
+            <div className="flex gap-2">
+              <Input
+                ref={scanRef}
+                autoFocus
+                value={scan}
+                onChange={(e) => setScan(e.target.value)}
+                onKeyDown={handleScan}
+                placeholder="Scan / type code, press Enter"
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" onClick={() => setCamOpen(true)}>
+                <Camera className="h-4 w-4 mr-2" />Camera
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">USB/Bluetooth scanners act as keyboard input. Or tap Camera to scan barcode/QR using your device camera.</p>
+            <CameraScannerDialog
+              open={camOpen}
+              onOpenChange={setCamOpen}
+              onDetected={(code) => { setScan(code); processCode(code); }}
             />
-            <p className="text-xs text-muted-foreground">USB/Bluetooth barcode scanners work like a keyboard — focus this field and scan.</p>
           </Card>
 
           <Card className="p-5 space-y-4">
