@@ -98,15 +98,11 @@ export type Database = {
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
-          exchange_id: string | null
           grand_total: number
           gst_total: number
           id: string
           invoice_number: string
-          invoice_type: string
-          notes: string | null
           payment_method: string
-          service_id: string | null
           subtotal: number
         }
         Insert: {
@@ -117,15 +113,11 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
-          exchange_id?: string | null
           grand_total?: number
           gst_total?: number
           id?: string
           invoice_number: string
-          invoice_type?: string
-          notes?: string | null
           payment_method?: string
-          service_id?: string | null
           subtotal?: number
         }
         Update: {
@@ -136,15 +128,11 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
-          exchange_id?: string | null
           grand_total?: number
           gst_total?: number
           id?: string
           invoice_number?: string
-          invoice_type?: string
-          notes?: string | null
           payment_method?: string
-          service_id?: string | null
           subtotal?: number
         }
         Relationships: [
@@ -386,21 +374,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_custom_invoice: {
-        Args: {
-          _amount_paid?: number
-          _customer_id: string
-          _customer_name: string
-          _customer_phone: string
-          _exchange_id?: string
-          _invoice_type: string
-          _items: Json
-          _notes?: string
-          _payment_method?: string
-          _service_id?: string
-        }
-        Returns: string
-      }
       create_invoice: {
         Args: {
           _amount_paid?: number
