@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ const empty = {
 
 function ExchangesPage() {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<Exchange[]>([]);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -133,6 +134,31 @@ function ExchangesPage() {
     if (error) return toast.error(error.message);
     toast.success("Deleted");
     load();
+  }
+
+  async function generateBill(e: Exchange) {
+    const amount = Number(e.exchange_value || e.valuation || 0);
+    if (amount <= 0) return toast.error("Set an Exchange Value before billing");
+    const { data, error } = await supabase.rpc("create_custom_invoice", {
+      _invoice_type: "exchange",
+      _customer_id: null as unknown as string,
+      _customer_name: e.seller_name,
+      _customer_phone: e.mobile_number,
+      _items: [{
+        name: `Mobile Exchange — ${e.brand} ${e.model} (IMEI ${e.imei})`,
+        quantity: 1,
+        unit_price: amount,
+        gst_percent: 0,
+      }] as unknown as never,
+      _payment_method: "cash",
+      _amount_paid: amount,
+      _exchange_id: e.id as unknown as string,
+      _service_id: undefined as unknown as string,
+      _notes: e.notes ?? (undefined as unknown as string),
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Exchange invoice created");
+    navigate({ to: "/invoice/$id", params: { id: data as string } });
   }
 
   const filtered = items.filter((i) => {
@@ -235,8 +261,8 @@ function ExchangesPage() {
                 <TableCell><Badge variant={statusVariant(e.status)} className="capitalize">{e.status}</Badge></TableCell>
                 <TableCell className="text-right">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" asChild title="Generate Bill">
-                    <Link to="/billing"><Receipt className="h-4 w-4 text-primary" /></Link>
+                  <Button size="icon" variant="ghost" title="Generate Bill" onClick={() => generateBill(e)}>
+                    <Receipt className="h-4 w-4 text-primary" />
                   </Button>
                   {isAdmin && <Button size="icon" variant="ghost" onClick={() => remove(e.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                 </TableCell>
