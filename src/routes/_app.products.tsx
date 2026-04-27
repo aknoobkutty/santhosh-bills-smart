@@ -8,9 +8,10 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Camera, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import { CameraScannerDialog } from "@/components/CameraScannerDialog";
 
 export const Route = createFileRoute("/_app/products")({
   component: ProductsPage,
@@ -25,9 +26,10 @@ type Product = {
   gst_percent: number;
   stock_quantity: number;
   low_stock_threshold: number;
+  barcode: string | null;
 };
 
-const empty = { name: "", brand: "", category: "", price: 0, gst_percent: 18, stock_quantity: 0, low_stock_threshold: 5 };
+const empty = { name: "", brand: "", category: "", price: 0, gst_percent: 18, stock_quantity: 0, low_stock_threshold: 5, barcode: "" };
 
 function ProductsPage() {
   const { isAdmin } = useAuth();
@@ -36,6 +38,7 @@ function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState({ ...empty });
+  const [camOpen, setCamOpen] = useState(false);
 
   async function load() {
     const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
@@ -47,14 +50,14 @@ function ProductsPage() {
   function openNew() { setEditing(null); setForm({ ...empty }); setOpen(true); }
   function openEdit(p: Product) {
     setEditing(p);
-    setForm({ name: p.name, brand: p.brand ?? "", category: p.category ?? "", price: Number(p.price), gst_percent: Number(p.gst_percent), stock_quantity: p.stock_quantity, low_stock_threshold: p.low_stock_threshold });
+    setForm({ name: p.name, brand: p.brand ?? "", category: p.category ?? "", price: Number(p.price), gst_percent: Number(p.gst_percent), stock_quantity: p.stock_quantity, low_stock_threshold: p.low_stock_threshold, barcode: p.barcode ?? "" });
     setOpen(true);
   }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return toast.error("Name required");
-    const payload = { ...form, name: form.name.trim(), brand: form.brand.trim() || null, category: form.category.trim() || null };
+    const payload = { ...form, name: form.name.trim(), brand: form.brand.trim() || null, category: form.category.trim() || null, barcode: form.barcode.trim() || null };
     const { error } = editing
       ? await supabase.from("products").update(payload).eq("id", editing.id)
       : await supabase.from("products").insert(payload);
@@ -73,7 +76,7 @@ function ProductsPage() {
   }
 
   const filtered = items.filter((p) =>
-    [p.name, p.brand, p.category].filter(Boolean).join(" ").toLowerCase().includes(q.toLowerCase())
+    [p.name, p.brand, p.category, p.barcode].filter(Boolean).join(" ").toLowerCase().includes(q.toLowerCase())
   );
 
   return (
@@ -103,6 +106,19 @@ function ProductsPage() {
                 <div><Label>Stock</Label><Input type="number" min="0" value={form.stock_quantity} onChange={(e) => setForm({ ...form, stock_quantity: Number(e.target.value) })} required /></div>
                 <div><Label>Low Stock Alert</Label><Input type="number" min="0" value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: Number(e.target.value) })} required /></div>
               </div>
+              <div>
+                <Label>Barcode</Label>
+                <div className="flex gap-2">
+                  <Input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} maxLength={120} placeholder="Scan or enter barcode/QR" />
+                  <Button type="button" variant="outline" onClick={() => setCamOpen(true)}><Camera className="h-4 w-4" /></Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Used by the billing scanner to find this product.</p>
+              </div>
+              <CameraScannerDialog
+                open={camOpen}
+                onOpenChange={setCamOpen}
+                onDetected={(code) => setForm((f) => ({ ...f, barcode: code }))}
+              />
               <Button type="submit" className="w-full">{editing ? "Update" : "Create"}</Button>
             </form>
           </DialogContent>
@@ -111,26 +127,27 @@ function ProductsPage() {
 
       <div className="relative max-w-md">
         <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, brand, category…" className="pl-9" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, brand, category, barcode…" className="pl-9" />
       </div>
 
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead><TableHead>Brand</TableHead><TableHead>Category</TableHead>
+              <TableHead>Name</TableHead><TableHead>Brand</TableHead><TableHead>Category</TableHead><TableHead>Barcode</TableHead>
               <TableHead className="text-right">Price</TableHead><TableHead className="text-right">GST%</TableHead>
               <TableHead className="text-right">Stock</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No products</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No products</TableCell></TableRow>
             ) : filtered.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell>{p.brand}</TableCell>
                 <TableCell>{p.category}</TableCell>
+                <TableCell className="font-mono text-xs">{p.barcode ? <span className="inline-flex items-center gap-1"><ScanLine className="h-3 w-3" />{p.barcode}</span> : <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell className="text-right">₹{Number(p.price).toFixed(2)}</TableCell>
                 <TableCell className="text-right">{p.gst_percent}%</TableCell>
                 <TableCell className="text-right">
