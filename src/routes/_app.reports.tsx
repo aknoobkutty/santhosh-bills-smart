@@ -6,14 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, Eye } from "lucide-react";
+import { Download, Search, Eye, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  BarChart, Bar, Legend,
+} from "recharts";
 
 export const Route = createFileRoute("/_app/reports")({
   component: ReportsPage,
 });
 
-type Inv = { id: string; invoice_number: string; customer_name: string | null; grand_total: number; created_at: string };
+type Inv = { id: string; invoice_number: string; customer_name: string | null; grand_total: number; created_at: string; invoice_type?: string | null; payment_method?: string | null };
 
 function fmtDate(d: Date) { return d.toISOString().slice(0, 10); }
 
@@ -29,7 +33,7 @@ function ReportsPage() {
     const fromDt = new Date(from + "T00:00:00").toISOString();
     const toDt = new Date(to + "T23:59:59").toISOString();
     const { data } = await supabase.from("invoices")
-      .select("id, invoice_number, customer_name, grand_total, created_at")
+      .select("id, invoice_number, customer_name, grand_total, created_at, invoice_type, payment_method")
       .gte("created_at", fromDt).lte("created_at", toDt)
       .order("created_at", { ascending: false });
     setItems((data ?? []) as Inv[]);
@@ -47,6 +51,28 @@ function ReportsPage() {
     return i.invoice_number.toLowerCase().includes(q) || (i.customer_name ?? "").toLowerCase().includes(q);
   });
   const total = filtered.reduce((s, i) => s + Number(i.grand_total), 0);
+
+  // Daily sales aggregation
+  const dailyMap = new Map<string, { date: string; total: number; count: number }>();
+  for (const i of filtered) {
+    const d = new Date(i.created_at).toISOString().slice(0, 10);
+    const cur = dailyMap.get(d) ?? { date: d, total: 0, count: 0 };
+    cur.total += Number(i.grand_total);
+    cur.count += 1;
+    dailyMap.set(d, cur);
+  }
+  const dailyData = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date)).map((d) => ({
+    ...d,
+    label: new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+  }));
+
+  // By invoice type
+  const typeMap = new Map<string, number>();
+  for (const i of filtered) {
+    const k = (i.invoice_type ?? "product");
+    typeMap.set(k, (typeMap.get(k) ?? 0) + Number(i.grand_total));
+  }
+  const typeData = Array.from(typeMap.entries()).map(([k, v]) => ({ type: k.replace("_", " "), total: Number(v.toFixed(2)) }));
 
   function exportCSV() {
     if (filtered.length === 0) { toast.error("Nothing to export"); return; }
@@ -129,6 +155,59 @@ function ReportsPage() {
           </TableBody>
         </Table>
       </Card>
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold">Daily Sales Trend</h2>
+          </div>
+          <div className="h-64">
+            {dailyData.length === 0 ? (
+              <div className="h-full grid place-items-center text-sm text-muted-foreground">No data</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6 }}
+                    formatter={(v: number) => [`₹${Number(v).toFixed(2)}`, "Sales"]}
+                  />
+                  <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold">Sales by Bill Type</h2>
+          </div>
+          <div className="h-64">
+            {typeData.length === 0 ? (
+              <div className="h-full grid place-items-center text-sm text-muted-foreground">No data</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={typeData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="type" tick={{ fontSize: 12 }} className="capitalize" />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6 }}
+                    formatter={(v: number) => [`₹${Number(v).toFixed(2)}`, "Total"]}
+                  />
+                  <Legend />
+                  <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

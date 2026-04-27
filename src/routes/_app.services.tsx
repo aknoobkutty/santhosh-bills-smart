@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,7 @@ const STATUS_OPTIONS: { value: ServiceStatus; label: string }[] = [
 
 function ServicesPage() {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<Service[]>([]);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ServiceStatus>("all");
@@ -155,6 +156,31 @@ function ServicesPage() {
     if (error) return toast.error(error.message);
     toast.success("Deleted");
     load();
+  }
+
+  async function generateBill(s: Service) {
+    const amount = Number(s.final_cost || s.estimated_cost || 0);
+    if (amount <= 0) return toast.error("Set a Final or Estimated Cost before billing");
+    const { data, error } = await supabase.rpc("create_custom_invoice", {
+      _invoice_type: "service",
+      _customer_id: null as unknown as string,
+      _customer_name: s.customer_name,
+      _customer_phone: s.mobile_number,
+      _items: [{
+        name: `Service — ${s.brand} ${s.device_model}: ${s.problem_description}`,
+        quantity: 1,
+        unit_price: amount,
+        gst_percent: 0,
+      }] as unknown as never,
+      _payment_method: "cash",
+      _amount_paid: amount,
+      _exchange_id: undefined as unknown as string,
+      _service_id: s.id as unknown as string,
+      _notes: s.notes ?? (undefined as unknown as string),
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Service invoice created");
+    navigate({ to: "/invoice/$id", params: { id: data as string } });
   }
 
   const filtered = items.filter((i) => {
@@ -292,8 +318,8 @@ function ServicesPage() {
                     <TableCell><Badge variant={statusVariant(s.service_status)} className="capitalize whitespace-nowrap">{s.service_status.replace("_", " ")}</Badge></TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       <Button size="icon" variant="ghost" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" asChild title="Generate Bill">
-                        <Link to="/billing"><Receipt className="h-4 w-4 text-primary" /></Link>
+                      <Button size="icon" variant="ghost" title="Generate Bill" onClick={() => generateBill(s)}>
+                        <Receipt className="h-4 w-4 text-primary" />
                       </Button>
                       {isAdmin && <Button size="icon" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                     </TableCell>
