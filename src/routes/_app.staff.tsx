@@ -262,7 +262,7 @@ function AttendanceTab({ isAdmin }: { isAdmin: boolean }) {
 
   async function mark(staff_id: string, status: "present" | "absent" | "leave") {
     if (!isAdmin) return toast.error("Admin only");
-    const { error } = await supabase.rpc("mark_attendance", { _staff_id: staff_id, _date: date, _status: status, _notes: null });
+    const { error } = await supabase.rpc("mark_attendance", { _staff_id: staff_id, _date: date, _status: status });
     if (error) return toast.error(error.message);
     toast.success("Marked " + status);
     loadDay();

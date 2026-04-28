@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvoiceIdRouteImport } from './routes/invoice.$id'
+import { Route as AppStaffRouteImport } from './routes/_app.staff'
 import { Route as AppServicesRouteImport } from './routes/_app.services'
 import { Route as AppReportsRouteImport } from './routes/_app.reports'
 import { Route as AppProductsRouteImport } from './routes/_app.products'
@@ -39,6 +40,11 @@ const InvoiceIdRoute = InvoiceIdRouteImport.update({
   id: '/invoice/$id',
   path: '/invoice/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppStaffRoute = AppStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppServicesRoute = AppServicesRouteImport.update({
   id: '/services',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/products': typeof AppProductsRoute
   '/reports': typeof AppReportsRoute
   '/services': typeof AppServicesRoute
+  '/staff': typeof AppStaffRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/products': typeof AppProductsRoute
   '/reports': typeof AppReportsRoute
   '/services': typeof AppServicesRoute
+  '/staff': typeof AppStaffRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRoutesById {
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_app/products': typeof AppProductsRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/services': typeof AppServicesRoute
+  '/_app/staff': typeof AppStaffRoute
   '/invoice/$id': typeof InvoiceIdRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/reports'
     | '/services'
+    | '/staff'
     | '/invoice/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/reports'
     | '/services'
+    | '/staff'
     | '/invoice/$id'
   id:
     | '__root__'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_app/products'
     | '/_app/reports'
     | '/_app/services'
+    | '/_app/staff'
     | '/invoice/$id'
   fileRoutesById: FileRoutesById
 }
@@ -190,6 +202,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invoice/$id'
       preLoaderRoute: typeof InvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/staff': {
+      id: '/_app/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof AppStaffRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/services': {
       id: '/_app/services'
@@ -251,6 +270,7 @@ interface AppRouteChildren {
   AppProductsRoute: typeof AppProductsRoute
   AppReportsRoute: typeof AppReportsRoute
   AppServicesRoute: typeof AppServicesRoute
+  AppStaffRoute: typeof AppStaffRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -261,6 +281,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProductsRoute: AppProductsRoute,
   AppReportsRoute: AppReportsRoute,
   AppServicesRoute: AppServicesRoute,
+  AppStaffRoute: AppStaffRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
