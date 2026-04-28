@@ -14,6 +14,12 @@ import { CameraScannerDialog } from "@/components/CameraScannerDialog";
 
 export const Route = createFileRoute("/_app/billing")({
   component: BillingPage,
+  validateSearch: (search: Record<string, unknown>): { type?: BillType; id?: string } => {
+    const out: { type?: BillType; id?: string } = {};
+    if (typeof search.type === "string") out.type = search.type as BillType;
+    if (typeof search.id === "string") out.id = search.id;
+    return out;
+  },
 });
 
 type Product = { id: string; name: string; price: number; gst_percent: number; stock_quantity: number; barcode?: string | null };
@@ -28,6 +34,7 @@ type ServiceRow = { id: string; customer_name: string; mobile_number: string; br
 
 function BillingPage() {
   const navigate = useNavigate();
+  const { type: searchType, id: searchId } = Route.useSearch();
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [recent, setRecent] = useState<{ id: string; invoice_number: string; grand_total: number; customer_name: string | null; created_at: string }[]>([]);
@@ -64,6 +71,24 @@ function BillingPage() {
     setServices((sv ?? []) as ServiceRow[]);
   }
   useEffect(() => { loadAll(); }, []);
+
+  // Autofill from query params (e.g. coming from Exchanges/Services "Generate Bill")
+  const appliedRef = useRef(false);
+  useEffect(() => {
+    if (appliedRef.current) return;
+    if (!searchType || !searchId) return;
+    if (searchType === "exchange" && exchanges.length > 0) {
+      if (!exchanges.find((e) => e.id === searchId)) return;
+      setTab("exchange");
+      applyExchange(searchId);
+      appliedRef.current = true;
+    } else if (searchType === "service" && services.length > 0) {
+      if (!services.find((s) => s.id === searchId)) return;
+      setTab("service");
+      applyService(searchId);
+      appliedRef.current = true;
+    }
+  }, [searchType, searchId, exchanges, services]);
 
   function setLine(i: number, patch: Partial<Line>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));

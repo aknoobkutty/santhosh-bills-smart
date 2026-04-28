@@ -158,29 +158,10 @@ function ServicesPage() {
     load();
   }
 
-  async function generateBill(s: Service) {
+  function generateBill(s: Service) {
     const amount = Number(s.final_cost || s.estimated_cost || 0);
     if (amount <= 0) return toast.error("Set a Final or Estimated Cost before billing");
-    const { data, error } = await supabase.rpc("create_custom_invoice", {
-      _invoice_type: "service",
-      _customer_id: null as unknown as string,
-      _customer_name: s.customer_name,
-      _customer_phone: s.mobile_number,
-      _items: [{
-        name: `Service — ${s.brand} ${s.device_model}: ${s.problem_description}`,
-        quantity: 1,
-        unit_price: amount,
-        gst_percent: 0,
-      }] as unknown as never,
-      _payment_method: "cash",
-      _amount_paid: amount,
-      _exchange_id: undefined as unknown as string,
-      _service_id: s.id as unknown as string,
-      _notes: s.notes ?? (undefined as unknown as string),
-    });
-    if (error) return toast.error(error.message);
-    toast.success("Service invoice created");
-    navigate({ to: "/invoice/$id", params: { id: data as string } });
+    navigate({ to: "/billing", search: { type: "service", id: s.id } });
   }
 
   const filtered = items.filter((i) => {
