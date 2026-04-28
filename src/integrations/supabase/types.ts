@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          staff_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -107,6 +148,7 @@ export type Database = {
           notes: string | null
           payment_method: string
           service_id: string | null
+          staff_id: string | null
           subtotal: number
         }
         Insert: {
@@ -126,6 +168,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           service_id?: string | null
+          staff_id?: string | null
           subtotal?: number
         }
         Update: {
@@ -145,6 +188,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           service_id?: string | null
+          staff_id?: string | null
           subtotal?: number
         }
         Relationships: [
@@ -363,6 +407,65 @@ export type Database = {
         }
         Relationships: []
       }
+      salary_records: {
+        Row: {
+          absent_days: number
+          base_salary: number
+          created_at: string
+          created_by: string | null
+          id: string
+          leave_days: number
+          month: string
+          notes: string | null
+          paid_on: string | null
+          present_days: number
+          salary_paid: number
+          staff_id: string
+          total_days: number
+          updated_at: string
+        }
+        Insert: {
+          absent_days?: number
+          base_salary?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          leave_days?: number
+          month: string
+          notes?: string | null
+          paid_on?: string | null
+          present_days?: number
+          salary_paid?: number
+          staff_id: string
+          total_days?: number
+          updated_at?: string
+        }
+        Update: {
+          absent_days?: number
+          base_salary?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          leave_days?: number
+          month?: string
+          notes?: string | null
+          paid_on?: string | null
+          present_days?: number
+          salary_paid?: number
+          staff_id?: string
+          total_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_records_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_returns: {
         Row: {
           created_at: string
@@ -420,6 +523,54 @@ export type Database = {
         }
         Relationships: []
       }
+      staff: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          join_date: string
+          name: string
+          notes: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          salary: number
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          join_date?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          salary?: number
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          join_date?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          salary?: number
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -446,6 +597,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_salary: {
+        Args: { _mark_paid?: boolean; _month: string; _staff_id: string }
+        Returns: string
+      }
       create_custom_invoice: {
         Args: {
           _amount_paid?: number
@@ -487,6 +642,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      mark_attendance: {
+        Args: {
+          _date: string
+          _notes?: string
+          _staff_id: string
+          _status: string
+        }
+        Returns: string
       }
     }
     Enums: {

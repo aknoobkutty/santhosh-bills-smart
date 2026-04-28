@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, Eye, TrendingUp, Undo2 } from "lucide-react";
+import { Download, Search, Eye, TrendingUp, Undo2, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -17,8 +17,9 @@ export const Route = createFileRoute("/_app/reports")({
   component: ReportsPage,
 });
 
-type Inv = { id: string; invoice_number: string; customer_name: string | null; grand_total: number; created_at: string; invoice_type?: string | null; payment_method?: string | null };
+type Inv = { id: string; invoice_number: string; customer_name: string | null; grand_total: number; created_at: string; invoice_type?: string | null; payment_method?: string | null; staff_id?: string | null };
 type Ret = { id: string; return_number: string; invoice_id: string; product_name: string; quantity: number; refund_amount: number; payment_method: string; return_date: string; created_at: string };
+type StaffLite = { id: string; name: string };
 
 function fmtDate(d: Date) { return d.toISOString().slice(0, 10); }
 
@@ -30,22 +31,25 @@ function ReportsPage() {
   const [items, setItems] = useState<Inv[]>([]);
   const [returns, setReturns] = useState<Ret[]>([]);
   const [search, setSearch] = useState("");
+  const [staffList, setStaffList] = useState<StaffLite[]>([]);
 
   async function load() {
     const fromDt = new Date(from + "T00:00:00").toISOString();
     const toDt = new Date(to + "T23:59:59").toISOString();
-    const [{ data }, { data: ret }] = await Promise.all([
+    const [{ data }, { data: ret }, { data: stf }] = await Promise.all([
       supabase.from("invoices")
-        .select("id, invoice_number, customer_name, grand_total, created_at, invoice_type, payment_method")
+        .select("id, invoice_number, customer_name, grand_total, created_at, invoice_type, payment_method, staff_id")
         .gte("created_at", fromDt).lte("created_at", toDt)
         .order("created_at", { ascending: false }),
       supabase.from("sales_returns")
         .select("id, return_number, invoice_id, product_name, quantity, refund_amount, payment_method, return_date, created_at")
         .gte("created_at", fromDt).lte("created_at", toDt)
         .order("created_at", { ascending: false }),
+      supabase.from("staff").select("id, name"),
     ]);
     setItems((data ?? []) as Inv[]);
     setReturns((ret ?? []) as Ret[]);
+    setStaffList((stf ?? []) as StaffLite[]);
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
@@ -84,6 +88,19 @@ function ReportsPage() {
     typeMap.set(k, (typeMap.get(k) ?? 0) + Number(i.grand_total));
   }
   const typeData = Array.from(typeMap.entries()).map(([k, v]) => ({ type: k.replace("_", " "), total: Number(v.toFixed(2)) }));
+
+  // Staff performance
+  const staffNameMap = new Map(staffList.map((s) => [s.id, s.name]));
+  const staffPerf = new Map<string, { name: string; count: number; total: number }>();
+  for (const i of filtered) {
+    const key = i.staff_id ?? "unassigned";
+    const name = i.staff_id ? (staffNameMap.get(i.staff_id) ?? "Unknown") : "Unassigned";
+    const cur = staffPerf.get(key) ?? { name, count: 0, total: 0 };
+    cur.count += 1;
+    cur.total += Number(i.grand_total);
+    staffPerf.set(key, cur);
+  }
+  const staffPerfData = Array.from(staffPerf.values()).sort((a, b) => b.total - a.total);
 
   function exportCSV() {
     if (filtered.length === 0) { toast.error("Nothing to export"); return; }
@@ -253,6 +270,31 @@ function ReportsPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="overflow-x-auto">
+        <div className="p-4 flex items-center gap-2 border-b">
+          <UserCog className="h-4 w-4 text-primary" />
+          <h2 className="font-semibold">Staff Performance</h2>
+        </div>
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>Staff</TableHead>
+            <TableHead className="text-right">Invoices</TableHead>
+            <TableHead className="text-right">Total Sales</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {staffPerfData.length === 0 ? (
+              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>
+            ) : staffPerfData.map((s) => (
+              <TableRow key={s.name}>
+                <TableCell className="font-medium">{s.name}</TableCell>
+                <TableCell className="text-right">{s.count}</TableCell>
+                <TableCell className="text-right">₹{s.total.toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
