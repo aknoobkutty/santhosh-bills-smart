@@ -136,29 +136,10 @@ function ExchangesPage() {
     load();
   }
 
-  async function generateBill(e: Exchange) {
+  function generateBill(e: Exchange) {
     const amount = Number(e.exchange_value || e.valuation || 0);
     if (amount <= 0) return toast.error("Set an Exchange Value before billing");
-    const { data, error } = await supabase.rpc("create_custom_invoice", {
-      _invoice_type: "exchange",
-      _customer_id: null as unknown as string,
-      _customer_name: e.seller_name,
-      _customer_phone: e.mobile_number,
-      _items: [{
-        name: `Mobile Exchange — ${e.brand} ${e.model} (IMEI ${e.imei})`,
-        quantity: 1,
-        unit_price: amount,
-        gst_percent: 0,
-      }] as unknown as never,
-      _payment_method: "cash",
-      _amount_paid: amount,
-      _exchange_id: e.id as unknown as string,
-      _service_id: undefined as unknown as string,
-      _notes: e.notes ?? (undefined as unknown as string),
-    });
-    if (error) return toast.error(error.message);
-    toast.success("Exchange invoice created");
-    navigate({ to: "/invoice/$id", params: { id: data as string } });
+    navigate({ to: "/billing", search: { type: "exchange", id: e.id } });
   }
 
   const filtered = items.filter((i) => {
