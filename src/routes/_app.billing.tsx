@@ -14,10 +14,12 @@ import { CameraScannerDialog } from "@/components/CameraScannerDialog";
 
 export const Route = createFileRoute("/_app/billing")({
   component: BillingPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    type: (search.type as BillType | undefined) ?? undefined,
-    id: (search.id as string | undefined) ?? undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { type?: BillType; id?: string } => {
+    const out: { type?: BillType; id?: string } = {};
+    if (typeof search.type === "string") out.type = search.type as BillType;
+    if (typeof search.id === "string") out.id = search.id;
+    return out;
+  },
 });
 
 type Product = { id: string; name: string; price: number; gst_percent: number; stock_quantity: number; barcode?: string | null };
