@@ -270,6 +270,31 @@ function ReportsPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="overflow-x-auto">
+        <div className="p-4 flex items-center gap-2 border-b">
+          <UserCog className="h-4 w-4 text-primary" />
+          <h2 className="font-semibold">Staff Performance</h2>
+        </div>
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>Staff</TableHead>
+            <TableHead className="text-right">Invoices</TableHead>
+            <TableHead className="text-right">Total Sales</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {staffPerfData.length === 0 ? (
+              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">No data</TableCell></TableRow>
+            ) : staffPerfData.map((s) => (
+              <TableRow key={s.name}>
+                <TableCell className="font-medium">{s.name}</TableCell>
+                <TableCell className="text-right">{s.count}</TableCell>
+                <TableCell className="text-right">₹{s.total.toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
