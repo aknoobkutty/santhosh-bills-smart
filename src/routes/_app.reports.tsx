@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, Eye, TrendingUp } from "lucide-react";
+import { Download, Search, Eye, TrendingUp, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_app/reports")({
 });
 
 type Inv = { id: string; invoice_number: string; customer_name: string | null; grand_total: number; created_at: string; invoice_type?: string | null; payment_method?: string | null };
+type Ret = { id: string; return_number: string; invoice_id: string; product_name: string; quantity: number; refund_amount: number; payment_method: string; return_date: string; created_at: string };
 
 function fmtDate(d: Date) { return d.toISOString().slice(0, 10); }
 
@@ -27,16 +28,24 @@ function ReportsPage() {
   const [from, setFrom] = useState(fmtDate(weekAgo));
   const [to, setTo] = useState(fmtDate(today));
   const [items, setItems] = useState<Inv[]>([]);
+  const [returns, setReturns] = useState<Ret[]>([]);
   const [search, setSearch] = useState("");
 
   async function load() {
     const fromDt = new Date(from + "T00:00:00").toISOString();
     const toDt = new Date(to + "T23:59:59").toISOString();
-    const { data } = await supabase.from("invoices")
-      .select("id, invoice_number, customer_name, grand_total, created_at, invoice_type, payment_method")
-      .gte("created_at", fromDt).lte("created_at", toDt)
-      .order("created_at", { ascending: false });
+    const [{ data }, { data: ret }] = await Promise.all([
+      supabase.from("invoices")
+        .select("id, invoice_number, customer_name, grand_total, created_at, invoice_type, payment_method")
+        .gte("created_at", fromDt).lte("created_at", toDt)
+        .order("created_at", { ascending: false }),
+      supabase.from("sales_returns")
+        .select("id, return_number, invoice_id, product_name, quantity, refund_amount, payment_method, return_date, created_at")
+        .gte("created_at", fromDt).lte("created_at", toDt)
+        .order("created_at", { ascending: false }),
+    ]);
     setItems((data ?? []) as Inv[]);
+    setReturns((ret ?? []) as Ret[]);
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
@@ -51,6 +60,8 @@ function ReportsPage() {
     return i.invoice_number.toLowerCase().includes(q) || (i.customer_name ?? "").toLowerCase().includes(q);
   });
   const total = filtered.reduce((s, i) => s + Number(i.grand_total), 0);
+  const refundTotal = returns.reduce((s, r) => s + Number(r.refund_amount), 0);
+  const netSales = total - refundTotal;
 
   // Daily sales aggregation
   const dailyMap = new Map<string, { date: string; total: number; count: number }>();
@@ -128,6 +139,40 @@ function ReportsPage() {
         <Card className="p-5"><p className="text-sm text-muted-foreground">Invoices</p><p className="text-2xl font-bold">{filtered.length}</p></Card>
         <Card className="p-5"><p className="text-sm text-muted-foreground">Total Sales</p><p className="text-2xl font-bold">₹{total.toFixed(2)}</p></Card>
       </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="p-5"><p className="text-sm text-muted-foreground">Refunds ({returns.length})</p><p className="text-2xl font-bold text-destructive">- ₹{refundTotal.toFixed(2)}</p></Card>
+        <Card className="p-5"><p className="text-sm text-muted-foreground">Net Sales</p><p className="text-2xl font-bold text-primary">₹{netSales.toFixed(2)}</p></Card>
+      </div>
+
+      <Card className="overflow-x-auto">
+        <div className="p-4 flex items-center gap-2 border-b">
+          <Undo2 className="h-4 w-4 text-destructive" />
+          <h2 className="font-semibold">Sales Returns</h2>
+        </div>
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>Return #</TableHead><TableHead>Item</TableHead>
+            <TableHead className="text-right">Qty</TableHead>
+            <TableHead>Method</TableHead><TableHead>Date</TableHead>
+            <TableHead className="text-right">Refund</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {returns.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No returns in this range</TableCell></TableRow>
+            ) : returns.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-mono text-xs">{r.return_number}</TableCell>
+                <TableCell>{r.product_name}</TableCell>
+                <TableCell className="text-right">{r.quantity}</TableCell>
+                <TableCell className="capitalize">{r.payment_method.replace("_", " ")}</TableCell>
+                <TableCell>{new Date(r.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="text-right font-medium text-destructive">- ₹{Number(r.refund_amount).toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
       <Card className="overflow-x-auto">
         <Table>

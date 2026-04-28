@@ -8,9 +8,10 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Trash2, Plus, Receipt, ScanLine, Banknote, CreditCard, Smartphone, Camera, Smartphone as PhoneIcon, Wrench, Package, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { CameraScannerDialog } from "@/components/CameraScannerDialog";
+import { SalesReturnDialog } from "@/components/SalesReturnDialog";
+import { Trash2, Plus, Receipt, ScanLine, Banknote, CreditCard, Smartphone, Camera, Smartphone as PhoneIcon, Wrench, Package, ShoppingBag, Undo2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/billing")({
   component: BillingPage,
@@ -55,6 +56,7 @@ function BillingPage() {
   const [scan, setScan] = useState("");
   const scanRef = useRef<HTMLInputElement>(null);
   const [camOpen, setCamOpen] = useState(false);
+  const [returnOpen, setReturnOpen] = useState(false);
 
   async function loadAll() {
     const [{ data: p }, { data: c }, { data: r }, { data: ex }, { data: sv }] = await Promise.all([
@@ -255,7 +257,12 @@ function BillingPage() {
         <Button variant="outline" size="sm" asChild>
           <Link to="/services"><Wrench className="h-4 w-4 mr-2" />Service Invoice</Link>
         </Button>
+        <Button variant="outline" size="sm" onClick={() => setReturnOpen(true)}>
+          <Undo2 className="h-4 w-4 mr-2" />Sales Return
+        </Button>
       </div>
+
+      <SalesReturnDialog open={returnOpen} onOpenChange={setReturnOpen} onSuccess={loadAll} />
 
       <Tabs value={tab} onValueChange={(v) => switchTab(v as BillType)}>
         <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto">

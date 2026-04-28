@@ -363,6 +363,63 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_returns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          gst_percent: number
+          id: string
+          invoice_id: string
+          invoice_item_id: string | null
+          payment_method: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          refund_amount: number
+          return_date: string
+          return_number: string
+          return_reason: string | null
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          gst_percent?: number
+          id?: string
+          invoice_id: string
+          invoice_item_id?: string | null
+          payment_method?: string
+          product_id?: string | null
+          product_name: string
+          quantity: number
+          refund_amount?: number
+          return_date?: string
+          return_number: string
+          return_reason?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          gst_percent?: number
+          id?: string
+          invoice_id?: string
+          invoice_item_id?: string | null
+          payment_method?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          refund_amount?: number
+          return_date?: string
+          return_number?: string
+          return_reason?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -412,6 +469,15 @@ export type Database = {
           _customer_phone: string
           _items: Json
           _payment_method?: string
+        }
+        Returns: string
+      }
+      create_sales_return: {
+        Args: {
+          _invoice_id: string
+          _items: Json
+          _payment_method?: string
+          _return_reason?: string
         }
         Returns: string
       }
