@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Smartphone, Eye, EyeOff } from "lucide-react";
+import { Smartphone, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -97,8 +97,17 @@ function LoginPage() {
               </button>
             </div>
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "…" : mode === "signin" ? "Sign In" : "Create Account"}
+          <Button type="submit" className="w-full" disabled={loading} aria-busy={loading}>
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {mode === "signin" ? "Signing in…" : "Creating account…"}
+              </span>
+            ) : mode === "signin" ? (
+              "Sign In"
+            ) : (
+              "Create Account"
+            )}
           </Button>
         </form>
 
