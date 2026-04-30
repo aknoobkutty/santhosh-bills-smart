@@ -45,7 +45,7 @@ const empty = {
   brand: "",
   condition_summary: "",
   valuation: 0,
-  status: "pending" as Exchange["status"],
+  status: "available" as Exchange["status"],
   notes: "",
   exchange_value: 0,
   exchange_date: new Date().toISOString().slice(0, 10),
