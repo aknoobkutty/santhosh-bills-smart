@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { CameraScannerDialog } from "@/components/CameraScannerDialog";
 import { SalesReturnDialog } from "@/components/SalesReturnDialog";
-import { Trash2, Plus, Receipt, ScanLine, Banknote, CreditCard, Smartphone, Camera, Smartphone as PhoneIcon, Wrench, Package, ShoppingBag, Undo2 } from "lucide-react";
+import { Trash2, Plus, Receipt, ScanLine, Banknote, CreditCard, Smartphone, Camera, Smartphone as PhoneIcon, Wrench, Package, Undo2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/billing")({
   component: BillingPage,
@@ -220,7 +220,7 @@ function BillingPage() {
       return;
     }
 
-    // Custom invoice (used_mobile / exchange / service)
+    // Custom invoice (exchange / service)
     if (customLines.some((l) => !l.name.trim() || l.quantity <= 0 || l.unit_price < 0)) {
       setSaving(false);
       return toast.error("Fill name, quantity and price for each line");
