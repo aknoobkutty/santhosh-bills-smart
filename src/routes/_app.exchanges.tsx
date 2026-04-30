@@ -27,7 +27,7 @@ type Exchange = {
   brand: string;
   condition_summary: string;
   valuation: number;
-  status: "pending" | "accepted" | "rejected";
+  status: "available" | "on_hand" | "sold_out";
   notes: string | null;
   created_at: string;
   exchange_value: number;
