@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,10 +24,22 @@ function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const submitBtnRef = useRef<HTMLButtonElement>(null);
+  const lastSubmitRef = useRef(0);
+
+  useEffect(() => {
+    if (loading) submitBtnRef.current?.focus();
+  }, [loading]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    // Debounce guard: ignore rapid double submits within 800ms
+    const now = Date.now();
+    if (loading || now - lastSubmitRef.current < 800) return;
+    lastSubmitRef.current = now;
     setLoading(true);
+    setStatusMsg(mode === "signin" ? "Signing in, please wait…" : "Creating your account, please wait…");
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
@@ -40,14 +52,17 @@ function LoginPage() {
         });
         if (error) throw error;
         toast.success("Account created. You can sign in now.");
+        setStatusMsg("Account created successfully.");
         setMode("signin");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        setStatusMsg("Signed in successfully. Redirecting…");
         nav({ to: "/dashboard" });
       }
     } catch (err) {
       toast.error((err as Error).message);
+      setStatusMsg(`Error: ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -64,7 +79,8 @@ function LoginPage() {
           <p className="text-sm text-muted-foreground">Billing Management System</p>
         </div>
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4" aria-busy={loading}>
+          <fieldset disabled={loading} className="space-y-4 border-0 p-0 m-0">
           {mode === "signup" && (
             <div>
               <Label htmlFor="name">Full Name</Label>
@@ -97,7 +113,7 @@ function LoginPage() {
               </button>
             </div>
           </div>
-          <Button type="submit" className="w-full" disabled={loading} aria-busy={loading}>
+          <Button ref={submitBtnRef} type="submit" className="w-full" disabled={loading} aria-busy={loading} aria-live="polite">
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -109,6 +125,10 @@ function LoginPage() {
               "Create Account"
             )}
           </Button>
+          </fieldset>
+          <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+            {statusMsg}
+          </div>
         </form>
 
         <div className="text-center mt-4 text-sm">
