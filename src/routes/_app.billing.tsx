@@ -28,7 +28,7 @@ type Customer = { id: string; name: string; phone: string | null };
 type Line = { product_id: string; quantity: number };
 type CustomLine = { name: string; quantity: number; unit_price: number; gst_percent: number };
 type PayMethod = "cash" | "card" | "upi";
-type BillType = "product" | "used_mobile" | "exchange" | "service";
+type BillType = "product" | "exchange" | "service";
 
 type ExchangeRow = { id: string; seller_name: string; mobile_number: string; brand: string; model: string; imei: string; exchange_value: number };
 type ServiceRow = { id: string; customer_name: string; mobile_number: string; brand: string; device_model: string; imei: string | null; problem_description: string; final_cost: number; estimated_cost: number };
@@ -247,7 +247,7 @@ function BillingPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Billing</h1>
-        <p className="text-muted-foreground">Create invoices for products, used mobiles, exchanges & services</p>
+        <p className="text-muted-foreground">Create invoices for products, exchanges & services</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -265,9 +265,8 @@ function BillingPage() {
       <SalesReturnDialog open={returnOpen} onOpenChange={setReturnOpen} onSuccess={loadAll} />
 
       <Tabs value={tab} onValueChange={(v) => switchTab(v as BillType)}>
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto">
+        <TabsList className="grid grid-cols-3 w-full h-auto">
           <TabsTrigger value="product" className="gap-1.5"><Package className="h-4 w-4" />Product</TabsTrigger>
-          <TabsTrigger value="used_mobile" className="gap-1.5"><ShoppingBag className="h-4 w-4" />Used Mobile</TabsTrigger>
           <TabsTrigger value="exchange" className="gap-1.5"><PhoneIcon className="h-4 w-4" />Exchange</TabsTrigger>
           <TabsTrigger value="service" className="gap-1.5"><Wrench className="h-4 w-4" />Service</TabsTrigger>
         </TabsList>
@@ -389,7 +388,7 @@ function BillingPage() {
           ) : (
           <Card className="p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold">{tab === "used_mobile" ? "Used Mobile Items" : tab === "exchange" ? "Exchange Bill Items" : "Service Items"}</h2>
+              <h2 className="font-semibold">{tab === "exchange" ? "Exchange Bill Items" : "Service Items"}</h2>
               <Button size="sm" variant="outline" onClick={addCustomLine}><Plus className="h-4 w-4 mr-1" />Add Line</Button>
             </div>
             {customLines.map((l, i) => {
@@ -398,7 +397,7 @@ function BillingPage() {
                 <div key={i} className="grid grid-cols-12 gap-2 items-end">
                   <div className="col-span-12 sm:col-span-5">
                     <Label className="text-xs">Description</Label>
-                    <Input value={l.name} onChange={(e) => setCustomLine(i, { name: e.target.value })} placeholder={tab === "used_mobile" ? "e.g. iPhone 11 64GB (IMEI…)" : tab === "exchange" ? "e.g. Exchange — Galaxy S21" : "e.g. Screen replacement"} maxLength={200} />
+                    <Input value={l.name} onChange={(e) => setCustomLine(i, { name: e.target.value })} placeholder={tab === "exchange" ? "e.g. Exchange — Galaxy S21" : "e.g. Screen replacement"} maxLength={200} />
                   </div>
                   <div className="col-span-3 sm:col-span-1">
                     <Label className="text-xs">Qty</Label>
