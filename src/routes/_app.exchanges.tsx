@@ -148,7 +148,10 @@ function ExchangesPage() {
   });
 
   const statusVariant = (s: Exchange["status"]) =>
-    s === "accepted" ? "default" : s === "rejected" ? "destructive" : "secondary";
+    s === "available" ? "default" : s === "sold_out" ? "destructive" : "secondary";
+
+  const statusLabel = (s: Exchange["status"]) =>
+    s === "on_hand" ? "On Hand" : s === "sold_out" ? "Sold Out" : "Available";
 
   return (
     <div className="space-y-6">
@@ -176,9 +179,9 @@ function ExchangesPage() {
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as Exchange["status"] })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="accepted">Accepted</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="on_hand">On Hand</SelectItem>
+                    <SelectItem value="sold_out">Sold Out</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -239,7 +242,7 @@ function ExchangesPage() {
                 <TableCell className="font-mono text-xs">{e.imei}</TableCell>
                 <TableCell className="max-w-xs truncate">{e.condition_summary}</TableCell>
                 <TableCell className="text-right">₹{Number(e.exchange_value ?? e.valuation).toFixed(2)}</TableCell>
-                <TableCell><Badge variant={statusVariant(e.status)} className="capitalize">{e.status}</Badge></TableCell>
+                <TableCell><Badge variant={statusVariant(e.status)}>{statusLabel(e.status)}</Badge></TableCell>
                 <TableCell className="text-right">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" title="Generate Bill" onClick={() => generateBill(e)}>
