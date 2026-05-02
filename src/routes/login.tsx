@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,8 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const nav = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
@@ -34,32 +32,25 @@ function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    // Debounce guard: ignore rapid double submits within 800ms
     const now = Date.now();
     if (loading || now - lastSubmitRef.current < 800) return;
     lastSubmitRef.current = now;
     setLoading(true);
-    setStatusMsg(mode === "signin" ? "Signing in, please wait…" : "Creating your account, please wait…");
+    setStatusMsg("Signing in, please wait…");
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { full_name: fullName },
-          },
-        });
-        if (error) throw error;
-        toast.success("Account created. You can sign in now.");
-        setStatusMsg("Account created successfully.");
-        setMode("signin");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        setStatusMsg("Signed in successfully. Redirecting…");
-        nav({ to: "/dashboard" });
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // Claim this device as the active session — kicks any other device.
+      const sid =
+        (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()));
+      try { sessionStorage.setItem("active_session_id", sid); } catch {}
+      await supabase.rpc("claim_session", {
+        _session_id: sid,
+        _user_agent: navigator.userAgent.slice(0, 200),
+        _ip: null,
+      });
+      setStatusMsg("Signed in successfully. Redirecting…");
+      nav({ to: "/dashboard" });
     } catch (err) {
       toast.error((err as Error).message);
       setStatusMsg(`Error: ${(err as Error).message}`);
@@ -81,12 +72,6 @@ function LoginPage() {
 
         <form onSubmit={submit} className="space-y-4" aria-busy={loading}>
           <fieldset disabled={loading} className="space-y-4 border-0 p-0 m-0">
-          {mode === "signup" && (
-            <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={100} />
-            </div>
-          )}
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -117,12 +102,10 @@ function LoginPage() {
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {mode === "signin" ? "Signing in…" : "Creating account…"}
+                Signing in…
               </span>
-            ) : mode === "signin" ? (
-              "Sign In"
             ) : (
-              "Create Account"
+              "Sign In"
             )}
           </Button>
           </fieldset>
@@ -131,10 +114,9 @@ function LoginPage() {
           </div>
         </form>
 
-        <div className="text-center mt-4 text-sm">
-          <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="text-primary hover:underline">
-            {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
-          </button>
+        <div className="text-center mt-4 text-sm space-y-1">
+          <Link to="/forgot-password" className="text-primary hover:underline block">Forgot password?</Link>
+          <p className="text-xs text-muted-foreground">Accounts are created by an administrator.</p>
         </div>
       </Card>
     </div>
