@@ -47,7 +47,6 @@ function LoginPage() {
       await supabase.rpc("claim_session", {
         _session_id: sid,
         _user_agent: navigator.userAgent.slice(0, 200),
-        _ip: null,
       });
       setStatusMsg("Signed in successfully. Redirecting…");
       nav({ to: "/dashboard" });
