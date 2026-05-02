@@ -201,6 +201,36 @@ export type Database = {
           },
         ]
       }
+      login_history: {
+        Row: {
+          id: string
+          ip_address: string | null
+          logged_in_at: string
+          logged_out_at: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          logged_in_at?: string
+          logged_out_at?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          logged_in_at?: string
+          logged_out_at?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       mobile_exchanges: {
         Row: {
           accessories: string | null
@@ -388,18 +418,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_session_id: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
         }
         Insert: {
+          active_session_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
         }
         Update: {
+          active_session_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -597,6 +630,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_session: {
+        Args: { _ip?: string; _session_id: string; _user_agent?: string }
+        Returns: undefined
+      }
       compute_salary: {
         Args: { _mark_paid?: boolean; _month: string; _staff_id: string }
         Returns: string
@@ -636,6 +673,7 @@ export type Database = {
         }
         Returns: string
       }
+      end_session: { Args: { _session_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
