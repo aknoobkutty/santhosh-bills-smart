@@ -119,7 +119,7 @@ function StaffTab({ isAdmin }: { isAdmin: boolean }) {
   function openEdit(s: Staff) {
     setEditing(s);
     setForm({
-      name: s.name, role: s.role, phone: s.phone ?? "", email: s.email,
+      name: s.name, role: s.role, phone: s.phone ?? "", email: s.email, password: "",
       salary: String(s.salary), join_date: s.join_date, status: s.status, notes: s.notes ?? "",
     });
     setOpen(true);
