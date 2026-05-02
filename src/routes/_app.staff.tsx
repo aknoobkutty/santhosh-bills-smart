@@ -14,8 +14,25 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Search, Printer, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import { adminCreateStaff, adminDeleteStaff, adminResetStaffPassword } from "@/server/staff-admin.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/_app/staff")({
+  beforeLoad: async () => {
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user.id;
+    if (!uid) return;
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!data) {
+      const { redirect } = await import("@tanstack/react-router");
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: StaffPage,
 });
 
@@ -85,8 +102,12 @@ function StaffTab({ isAdmin }: { isAdmin: boolean }) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Staff | null>(null);
-  const empty = { name: "", role: "staff" as "admin" | "staff", phone: "", email: "", salary: "0", join_date: new Date().toISOString().slice(0, 10), status: "active" as "active" | "inactive", notes: "" };
+  const empty = { name: "", role: "staff" as "admin" | "staff", phone: "", email: "", password: "", salary: "0", join_date: new Date().toISOString().slice(0, 10), status: "active" as "active" | "inactive", notes: "" };
   const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
+  const createFn = useServerFn(adminCreateStaff);
+  const deleteFn = useServerFn(adminDeleteStaff);
+  const resetFn = useServerFn(adminResetStaffPassword);
 
   async function load() {
     const { data, error } = await supabase.from("staff").select("*").order("created_at", { ascending: false });
@@ -98,7 +119,7 @@ function StaffTab({ isAdmin }: { isAdmin: boolean }) {
   function openEdit(s: Staff) {
     setEditing(s);
     setForm({
-      name: s.name, role: s.role, phone: s.phone ?? "", email: s.email,
+      name: s.name, role: s.role, phone: s.phone ?? "", email: s.email, password: "",
       salary: String(s.salary), join_date: s.join_date, status: s.status, notes: s.notes ?? "",
     });
     setOpen(true);
@@ -109,29 +130,71 @@ function StaffTab({ isAdmin }: { isAdmin: boolean }) {
     if (!isAdmin) return toast.error("Admin only");
     if (!form.name.trim()) return toast.error("Name required");
     if (!form.email.trim()) return toast.error("Email required");
-    const payload = {
-      name: form.name.trim(),
-      role: form.role,
-      phone: form.phone.trim() || null,
-      email: form.email.trim().toLowerCase(),
-      salary: Number(form.salary) || 0,
-      join_date: form.join_date,
-      status: form.status,
-      notes: form.notes.trim() || null,
-    };
-    const { error } = editing
-      ? await supabase.from("staff").update(payload).eq("id", editing.id)
-      : await supabase.from("staff").insert(payload);
-    if (error) return toast.error(error.message);
-    toast.success(editing ? "Updated" : "Added");
-    setOpen(false); load();
+    setSaving(true);
+    try {
+      if (editing) {
+        const payload = {
+          name: form.name.trim(),
+          role: form.role,
+          phone: form.phone.trim() || null,
+          email: form.email.trim().toLowerCase(),
+          salary: Number(form.salary) || 0,
+          join_date: form.join_date,
+          status: form.status,
+          notes: form.notes.trim() || null,
+        };
+        const { error } = await supabase.from("staff").update(payload).eq("id", editing.id);
+        if (error) throw new Error(error.message);
+        toast.success("Updated");
+      } else {
+        if (form.password.length < 8) throw new Error("Password must be at least 8 characters");
+        await createFn({
+          data: {
+            email: form.email.trim().toLowerCase(),
+            password: form.password,
+            full_name: form.name.trim(),
+            phone: form.phone.trim() || null,
+            salary: Number(form.salary) || 0,
+            role: form.role,
+          },
+        });
+        toast.success("Staff account created");
+      }
+      setOpen(false);
+      load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  async function remove(id: string) {
-    if (!confirm("Delete this staff member? Attendance & salary records will also be removed.")) return;
-    const { error } = await supabase.from("staff").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Deleted"); load();
+  async function remove(s: Staff) {
+    if (!confirm("Delete this staff member and their login account?")) return;
+    try {
+      if (s.user_id) {
+        await deleteFn({ data: { user_id: s.user_id } });
+      } else {
+        const { error } = await supabase.from("staff").delete().eq("id", s.id);
+        if (error) throw new Error(error.message);
+      }
+      toast.success("Deleted");
+      load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  async function resetPassword(s: Staff) {
+    if (!s.user_id) return toast.error("This staff has no login account");
+    const pw = prompt("New password (min 8 characters):");
+    if (!pw) return;
+    try {
+      await resetFn({ data: { user_id: s.user_id, password: pw } });
+      toast.success("Password reset");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
   }
 
   const filtered = items.filter((s) => {
@@ -166,6 +229,9 @@ function StaffTab({ isAdmin }: { isAdmin: boolean }) {
                 <div className="col-span-2"><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={100} /></div>
                 <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required maxLength={120} /></div>
                 <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} maxLength={20} /></div>
+                {!editing && (
+                  <div className="col-span-2"><Label>Password</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={8} maxLength={72} placeholder="Min 8 characters" /></div>
+                )}
                 <div>
                   <Label>Role</Label>
                   <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as "admin" | "staff" })}>
@@ -189,10 +255,10 @@ function StaffTab({ isAdmin }: { isAdmin: boolean }) {
                 <div><Label>Salary (₹/mo)</Label><Input type="number" min="0" step="0.01" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} required /></div>
                 <div><Label>Join Date</Label><Input type="date" value={form.join_date} onChange={(e) => setForm({ ...form, join_date: e.target.value })} required /></div>
                 <div className="col-span-2"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={300} /></div>
-                <Button type="submit" className="col-span-2 w-full">{editing ? "Update" : "Create"}</Button>
+                <Button type="submit" className="col-span-2 w-full" disabled={saving}>{saving ? "Saving…" : editing ? "Update" : "Create Account"}</Button>
               </form>
               <p className="text-xs text-muted-foreground">
-                Tip: After creating staff, ask them to sign up using the same email at the login page so their account links automatically (or link via user_id later).
+                Creating a staff member here also creates their login account with a hashed password.
               </p>
             </DialogContent>
           </Dialog>
@@ -220,7 +286,8 @@ function StaffTab({ isAdmin }: { isAdmin: boolean }) {
                 <TableCell><Badge variant={s.status === "active" ? "default" : "outline"}>{s.status}</Badge></TableCell>
                 <TableCell className="text-right">
                   {isAdmin && <Button size="sm" variant="ghost" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>}
-                  {isAdmin && <Button size="sm" variant="ghost" onClick={() => remove(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  {isAdmin && s.user_id && <Button size="sm" variant="ghost" onClick={() => resetPassword(s)} title="Reset password">🔑</Button>}
+                  {isAdmin && <Button size="sm" variant="ghost" onClick={() => remove(s)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                 </TableCell>
               </TableRow>
             ))}

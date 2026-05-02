@@ -40,6 +40,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Single-session enforcement: watch our profile's active_session_id;
+  // if it changes to something other than ours, sign out this device.
+  useEffect(() => {
+    if (!user) return;
+    const mySid = (() => { try { return sessionStorage.getItem("active_session_id"); } catch { return null; } })();
+    if (!mySid) return;
+
+    const channel = supabase
+      .channel(`profile-session-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        (payload) => {
+          const next = (payload.new as any)?.active_session_id;
+          if (next && next !== mySid) {
+            supabase.auth.signOut().then(() => {
+              try { sessionStorage.removeItem("active_session_id"); } catch {}
+              if (typeof window !== "undefined") window.location.href = "/login?kicked=1";
+            });
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
   async function fetchRole(uid: string) {
     const { data } = await supabase
       .from("user_roles")
@@ -52,6 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    const sid = (() => { try { return sessionStorage.getItem("active_session_id"); } catch { return null; } })();
+    if (sid) {
+      try { await supabase.rpc("end_session", { _session_id: sid }); } catch {}
+      try { sessionStorage.removeItem("active_session_id"); } catch {}
+    }
     await supabase.auth.signOut();
     setRole(null);
   }

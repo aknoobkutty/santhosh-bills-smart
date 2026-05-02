@@ -5,22 +5,23 @@ import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Receipt, Package, Users, BarChart3, Sun, Moon, LogOut, Smartphone, Repeat, Wrench, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const nav = [
+const allNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/billing", label: "Billing", icon: Receipt },
   { to: "/products", label: "Products", icon: Package },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/exchanges", label: "Exchanges", icon: Repeat },
   { to: "/services", label: "Services", icon: Wrench },
-  { to: "/staff", label: "Staff", icon: UserCog },
+  { to: "/staff", label: "Staff", icon: UserCog, adminOnly: true },
   { to: "/reports", label: "Reports", icon: BarChart3 },
 ] as const;
 
 export function AppLayout() {
-  const { user, role, signOut } = useAuth();
+  const { user, role, signOut, isAdmin } = useAuth();
   const { theme, toggle } = useTheme();
   const loc = useLocation();
   const navigate = useNavigate();
+  const nav = allNav.filter((n) => !("adminOnly" in n && n.adminOnly) || isAdmin);
 
   async function handleSignOut() {
     await signOut();
